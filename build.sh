@@ -13,5 +13,5 @@ dotnet build --configuration Release
 echo "Hybrid build complete."
 echo "Run GUI: cd gui-csharp && dotnet run"
 
-# echo "Running the Application"
-# cd ../gui-csharp && dotnet run
+echo "Running the Application"
+cd ../gui-csharp && dotnet run
