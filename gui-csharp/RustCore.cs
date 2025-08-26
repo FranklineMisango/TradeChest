@@ -23,28 +23,28 @@ public unsafe class RustCore : IDisposable
 {
     private IntPtr _core;
 
-    [DllImport("tradechest_core", CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("./libtradechest_core.dylib", CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr create_core(byte[] symbol);
 
-    [DllImport("tradechest_core", CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("./libtradechest_core.dylib", CallingConvention = CallingConvention.Cdecl)]
     private static extern void start_market_data(IntPtr core);
 
-    [DllImport("tradechest_core", CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("./libtradechest_core.dylib", CallingConvention = CallingConvention.Cdecl)]
     private static extern Quote get_current_quote(IntPtr core);
 
-    [DllImport("tradechest_core", CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("./libtradechest_core.dylib", CallingConvention = CallingConvention.Cdecl)]
     private static extern void destroy_core(IntPtr core);
 
-    [DllImport("tradechest_core", CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("./libtradechest_core.dylib", CallingConvention = CallingConvention.Cdecl)]
     private static extern void set_initial_portfolio(IntPtr core, double usd, double btc);
 
-    [DllImport("tradechest_core", CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("./libtradechest_core.dylib", CallingConvention = CallingConvention.Cdecl)]
     private static extern int simulate_buy_trade(IntPtr core, int quantity);
 
-    [DllImport("tradechest_core", CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("./libtradechest_core.dylib", CallingConvention = CallingConvention.Cdecl)]
     private static extern int simulate_sell_trade(IntPtr core, int quantity);
 
-    [DllImport("tradechest_core", CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("./libtradechest_core.dylib", CallingConvention = CallingConvention.Cdecl)]
     private static extern int auto_trade(IntPtr core, byte[] result, int len);
 
     public RustCore(string symbol)

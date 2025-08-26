@@ -37,7 +37,7 @@ while (true)
         }
         
         // Check for user input
-        if (Console.KeyAvailable)
+        if (Console.IsInputRedirected == false && Console.KeyAvailable)
         {
             var key = Console.ReadKey(true).KeyChar;
             switch (key)

@@ -1,0 +1,23 @@
+[package]
+name = "tradechest-core"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+tokio = { version = "1.0", features = ["full"] }
+tokio-tungstenite = { version = "0.20", features = ["native-tls"] }
+futures-util = "0.3"
+serde_json = "1.0"
+url = "2.4"
+crossbeam = "0.8"
+thiserror = "1.0"
+log = "0.4"
+criterion = { version = "0.5", features = ["html_reports"] }
+fastrand = "2.0"
+
+[[bench]]
+name = "trading_bench"
+harness = false

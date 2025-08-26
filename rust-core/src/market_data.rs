@@ -10,6 +10,7 @@ pub struct MarketDataFeed {
     price: Arc<Mutex<f64>>,
     bid: Arc<Mutex<f64>>,
     ask: Arc<Mutex<f64>>,
+    price_history: Arc<Mutex<Vec<f64>>>,
 }
 
 impl MarketDataFeed {
@@ -19,6 +20,7 @@ impl MarketDataFeed {
             price: Arc::new(Mutex::new(0.0)),
             bid: Arc::new(Mutex::new(0.0)),
             ask: Arc::new(Mutex::new(0.0)),
+            price_history: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
@@ -101,5 +103,32 @@ impl MarketDataFeed {
     
     pub fn current_ask(&self) -> f64 {
         *self.ask.lock().unwrap()
+    }
+    
+    pub fn realized_volatility(&self) -> f64 {
+        let prices = self.price_history.lock().unwrap();
+        if prices.len() < 2 { return 0.3; } // Default 30% vol
+        
+        let returns: Vec<f64> = prices.windows(2)
+            .map(|w| (w[1] / w[0]).ln())
+            .collect();
+        
+        if returns.is_empty() { return 0.3; }
+        
+        let mean = returns.iter().sum::<f64>() / returns.len() as f64;
+        let variance = returns.iter()
+            .map(|r| (r - mean).powi(2))
+            .sum::<f64>() / returns.len() as f64;
+        
+        (variance.sqrt() * (252.0_f64).sqrt()).clamp(0.1, 2.0) // Annualized
+    }
+    
+    pub fn liquidity_factor(&self) -> f64 {
+        let bid = self.current_bid();
+        let ask = self.current_ask();
+        if bid <= 0.0 || ask <= 0.0 { return 1.0; }
+        
+        let spread_bps = ((ask - bid) / ((ask + bid) / 2.0)) * 10000.0;
+        (20.0 / spread_bps).clamp(0.5, 2.0) // Higher factor = more liquid
     }
 }

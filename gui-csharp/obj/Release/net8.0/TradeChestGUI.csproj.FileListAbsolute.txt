@@ -1,0 +1,15 @@
+/Users/misango/codechest/TradeChest/gui-csharp/bin/Release/net8.0/TradeChestGUI
+/Users/misango/codechest/TradeChest/gui-csharp/bin/Release/net8.0/TradeChestGUI.deps.json
+/Users/misango/codechest/TradeChest/gui-csharp/bin/Release/net8.0/TradeChestGUI.runtimeconfig.json
+/Users/misango/codechest/TradeChest/gui-csharp/bin/Release/net8.0/TradeChestGUI.dll
+/Users/misango/codechest/TradeChest/gui-csharp/bin/Release/net8.0/TradeChestGUI.pdb
+/Users/misango/codechest/TradeChest/gui-csharp/obj/Release/net8.0/TradeChestGUI.GeneratedMSBuildEditorConfig.editorconfig
+/Users/misango/codechest/TradeChest/gui-csharp/obj/Release/net8.0/TradeChestGUI.AssemblyInfoInputs.cache
+/Users/misango/codechest/TradeChest/gui-csharp/obj/Release/net8.0/TradeChestGUI.AssemblyInfo.cs
+/Users/misango/codechest/TradeChest/gui-csharp/obj/Release/net8.0/TradeChestGUI.csproj.CoreCompileInputs.cache
+/Users/misango/codechest/TradeChest/gui-csharp/obj/Release/net8.0/TradeChestGUI.sourcelink.json
+/Users/misango/codechest/TradeChest/gui-csharp/obj/Release/net8.0/TradeChestGUI.dll
+/Users/misango/codechest/TradeChest/gui-csharp/obj/Release/net8.0/refint/TradeChestGUI.dll
+/Users/misango/codechest/TradeChest/gui-csharp/obj/Release/net8.0/TradeChestGUI.pdb
+/Users/misango/codechest/TradeChest/gui-csharp/obj/Release/net8.0/TradeChestGUI.genruntimeconfig.cache
+/Users/misango/codechest/TradeChest/gui-csharp/obj/Release/net8.0/ref/TradeChestGUI.dll
