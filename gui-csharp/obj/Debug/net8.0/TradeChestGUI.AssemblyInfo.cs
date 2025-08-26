@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TradeChestGUI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2f87b517228e22d8be78f244cc869367b90f82d1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+29f8262d9171130199007cc10ffaa4e504bf6daf")]
 [assembly: System.Reflection.AssemblyProductAttribute("TradeChestGUI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TradeChestGUI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
