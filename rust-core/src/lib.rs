@@ -3,7 +3,7 @@ mod market_data;
 mod order_engine;
 mod fpga_bridge;
 
-use hjb::HJBEngine;
+// ...existing code...
 use market_data::MarketDataFeed;
 use order_engine::OrderEngine;
 use fpga_bridge::FPGAEngine;
@@ -11,7 +11,7 @@ use std::ffi::CStr;
 use std::os::raw::c_char;
 
 pub struct TradingCore {
-    hjb_engine: HJBEngine,
+    // ...existing code...
     fpga_engine: FPGAEngine,
     market_feed: MarketDataFeed,
     order_engine: OrderEngine,
@@ -143,7 +143,7 @@ pub extern "C" fn destroy_core(core: *mut TradingCore) {
 impl TradingCore {
     fn new(symbol: String) -> Self {
         Self {
-            hjb_engine: HJBEngine::new_default(),
+            // ...existing code...
             fpga_engine: FPGAEngine::new(),
             market_feed: MarketDataFeed::new(symbol),
             order_engine: OrderEngine::new(),
