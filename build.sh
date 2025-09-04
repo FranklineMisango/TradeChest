@@ -4,7 +4,7 @@ set -e
 echo "Building Rust core..."
 cd rust-core
 cargo build --release
-cp target/release/libtradechest_core.dylib ../gui-csharp/
+cp target/release/libtradechest_core.so ../gui-csharp/libtradechest_core.so
 
 echo "Building C# GUI..."
 cd ../gui-csharp
