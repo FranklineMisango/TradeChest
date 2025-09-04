@@ -1,10 +1,12 @@
 // use ndarray::{Array1, Array3}; // Unused imports
 
+#[allow(dead_code)]
 pub struct HJBEngine {
     _c: f64,
     // Add parameters for grid size, etc. as needed
 }
 
+#[allow(dead_code)]
 impl HJBEngine {
     pub fn new_default() -> Self {
     Self { _c: 1.0 }

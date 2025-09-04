@@ -10,6 +10,35 @@ use fpga_bridge::FPGAEngine;
 use std::ffi::CStr;
 use std::os::raw::c_char;
 
+#[derive(Clone)]
+pub struct Config {
+    pub gamma: f64,  // Risk aversion
+    pub k: f64,      // Liquidity cost
+    pub base_threshold: f64,
+    pub max_trade_size: i32,
+    pub inventory_reduction_factor: f64,
+    pub vol_scalar_min: f64,
+    pub vol_scalar_max: f64,
+    pub time_factor_min: f64,
+    pub slippage_bps: f64, // Basis points for market impact
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            gamma: 0.1,
+            k: 1.5,
+            base_threshold: 5.0,
+            max_trade_size: 5,
+            inventory_reduction_factor: 0.8,
+            vol_scalar_min: 0.5,
+            vol_scalar_max: 2.0,
+            time_factor_min: 0.2,
+            slippage_bps: 1.0, // 1 bps slippage
+        }
+    }
+}
+
 pub struct TradingCore {
     // ...existing code...
     fpga_engine: FPGAEngine,
@@ -19,6 +48,7 @@ pub struct TradingCore {
     btc_balance: std::sync::atomic::AtomicU64,
     initial_usd: f64,
     initial_btc: f64,
+    config: Config,
 }
 
 #[repr(C)]
@@ -33,6 +63,7 @@ pub struct Quote {
     pub usd_balance: f64,
     pub btc_balance: f64,
     pub pnl: f64,
+    pub unrealized_pnl: f64,
     pub latency_us: u64,
 }
 
@@ -64,7 +95,10 @@ pub extern "C" fn set_initial_portfolio(core: *mut TradingCore, usd: f64, btc: f
 #[no_mangle]
 pub extern "C" fn simulate_buy_trade(core: *mut TradingCore, quantity: i32) -> i32 {
     unsafe { 
-        let price = (*core).market_feed.current_ask();
+        let mut price = (*core).market_feed.current_ask();
+        // Apply market impact slippage
+        let slippage = price * (*core).config.slippage_bps / 10000.0;
+        price += slippage;
         if (*core).order_engine.execute_buy(quantity, price, &(*core).usd_balance, &(*core).btc_balance) {
             1
         } else {
@@ -76,7 +110,10 @@ pub extern "C" fn simulate_buy_trade(core: *mut TradingCore, quantity: i32) -> i
 #[no_mangle]
 pub extern "C" fn simulate_sell_trade(core: *mut TradingCore, quantity: i32) -> i32 {
     unsafe { 
-        let price = (*core).market_feed.current_bid();
+        let mut price = (*core).market_feed.current_bid();
+        // Apply market impact slippage
+        let slippage = price * (*core).config.slippage_bps / 10000.0;
+        price -= slippage;
         if (*core).order_engine.execute_sell(quantity, price, &(*core).usd_balance, &(*core).btc_balance) {
             1
         } else {
@@ -92,25 +129,24 @@ pub extern "C" fn auto_trade(core: *mut TradingCore, result: *mut u8, len: i32) 
         let mid_price = (*core).market_feed.current_price();
         let volatility = (*core).market_feed.realized_volatility();
         
-        // Professional dynamic inventory management
+                // Professional dynamic inventory management
         let time_factor = (*core).time_to_close_factor(); // 1.0 at open, 0.0 at close
-        let vol_scalar = (volatility / 0.3).clamp(0.5, 2.0); // Scale vs base 30% vol
+        let vol_scalar = (volatility / 0.3).clamp((*core).config.vol_scalar_min, (*core).config.vol_scalar_max); // Scale vs base 30% vol
         let _liquidity_factor = (*core).market_feed.liquidity_factor();
         
         // Dynamic target: reduce inventory as market close approaches
         let base_target = (*core).initial_btc as i32;
-        let target_inventory = (base_target as f64 * time_factor * 0.8) as i32; // Max 80% of base
+        let target_inventory = (base_target as f64 * time_factor * (*core).config.inventory_reduction_factor) as i32; // Max 80% of base
         
         // Dynamic threshold: higher in volatile markets, lower near close
-        let base_threshold = 5.0;
-        let rebalance_threshold = (base_threshold * vol_scalar * time_factor.max(0.2)) as i32;
+        let rebalance_threshold = (((*core).config.base_threshold * vol_scalar * time_factor.max((*core).config.time_factor_min)) as i32).max(1);
         
         let deviation = inventory - target_inventory;
         let abs_deviation = deviation.abs();
         
         // Risk-based position sizing
-        let max_trade_size = (abs_deviation as f64 * 0.3).ceil() as i32; // Trade 30% of excess
-        let trade_size = max_trade_size.clamp(1, 5); // Min 1, Max 5 BTC per trade
+        let max_trade_size = (abs_deviation as f64 * 0.3).ceil() as i32;
+        let trade_size = max_trade_size.clamp(1, (*core).config.max_trade_size); // Min 1, Max 5 BTC per trade
         
         if abs_deviation > rebalance_threshold {
             let (action, success) = if deviation > 0 {
@@ -136,8 +172,14 @@ pub extern "C" fn auto_trade(core: *mut TradingCore, result: *mut u8, len: i32) 
 }
 
 #[no_mangle]
-pub extern "C" fn destroy_core(core: *mut TradingCore) {
-    unsafe { drop(Box::from_raw(core)) };
+pub extern "C" fn set_config(core: *mut TradingCore, gamma: f64, k: f64, base_threshold: f64, max_trade_size: i32, slippage_bps: f64) {
+    unsafe {
+        (*core).config.gamma = gamma;
+        (*core).config.k = k;
+        (*core).config.base_threshold = base_threshold;
+        (*core).config.max_trade_size = max_trade_size;
+        (*core).config.slippage_bps = slippage_bps;
+    }
 }
 
 impl TradingCore {
@@ -151,6 +193,7 @@ impl TradingCore {
             btc_balance: std::sync::atomic::AtomicU64::new(0),
             initial_usd: 0.0,
             initial_btc: 0.0,
+            config: Config::default(),
         }
     }
 
@@ -186,7 +229,7 @@ impl TradingCore {
         let inventory = self.order_engine.inventory();
         // Use FPGA for optimal quote calculation
         let volatility = self.market_feed.realized_volatility();
-        let (optimal_bid, optimal_ask, fpga_latency_ns) = self.fpga_engine.calculate_optimal_quotes(mid_price, inventory, volatility);
+        let (optimal_bid, optimal_ask, fpga_latency_ns) = self.fpga_engine.calculate_optimal_quotes(mid_price, inventory, volatility, self.config.gamma, self.config.k);
         
         let current_usd = f64::from_bits(self.usd_balance.load(std::sync::atomic::Ordering::Relaxed));
         let current_btc = f64::from_bits(self.btc_balance.load(std::sync::atomic::Ordering::Relaxed));
@@ -204,6 +247,7 @@ impl TradingCore {
             usd_balance: current_usd,
             btc_balance: current_btc,
             pnl: realized_pnl,
+            unrealized_pnl: 0.0, // Placeholder
             latency_us: (fpga_latency_ns / 1000) as u64, // Convert ns to μs
         }
     }

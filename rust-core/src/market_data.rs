@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 use std::thread;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use futures_util::StreamExt;
@@ -7,20 +7,20 @@ use url::Url;
 
 pub struct MarketDataFeed {
     _symbol: String,
-    price: Arc<Mutex<f64>>,
-    bid: Arc<Mutex<f64>>,
-    ask: Arc<Mutex<f64>>,
-    price_history: Arc<Mutex<Vec<f64>>>,
+    price: Arc<RwLock<f64>>,
+    bid: Arc<RwLock<f64>>,
+    ask: Arc<RwLock<f64>>,
+    price_history: Arc<RwLock<Vec<f64>>>,
 }
 
 impl MarketDataFeed {
     pub fn new(symbol: String) -> Self {
         Self {
             _symbol: symbol,
-            price: Arc::new(Mutex::new(0.0)),
-            bid: Arc::new(Mutex::new(0.0)),
-            ask: Arc::new(Mutex::new(0.0)),
-            price_history: Arc::new(Mutex::new(Vec::new())),
+            price: Arc::new(RwLock::new(0.0)),
+            bid: Arc::new(RwLock::new(0.0)),
+            ask: Arc::new(RwLock::new(0.0)),
+            price_history: Arc::new(RwLock::new(Vec::with_capacity(1000))),
         }
     }
 
@@ -29,6 +29,7 @@ impl MarketDataFeed {
         let price = self.price.clone();
         let bid = self.bid.clone();
         let ask = self.ask.clone();
+        let price_history = self.price_history.clone();
         
         thread::spawn(move || {
             let rt = tokio::runtime::Runtime::new().unwrap();
@@ -38,6 +39,7 @@ impl MarketDataFeed {
                 
                 // Start ticker stream
                 let price_clone = price.clone();
+                let price_history_clone = price_history.clone();
                 tokio::spawn(async move {
                     loop {
                         if let Ok(url) = Url::parse(&ticker_url) {
@@ -48,7 +50,17 @@ impl MarketDataFeed {
                                         if let Ok(data) = serde_json::from_str::<Value>(&text) {
                                             if let Some(last_price) = data["c"].as_str() {
                                                 if let Ok(price_val) = last_price.parse::<f64>() {
-                                                    *price_clone.lock().unwrap() = price_val;
+                                                    let mut price_lock = price_clone.write().unwrap();
+                                                    let _old_price = *price_lock;
+                                                    *price_lock = price_val;
+                                                    drop(price_lock);
+                                                    
+                                                    // Update price history
+                                                    let mut history = price_history_clone.write().unwrap();
+                                                    history.push(price_val);
+                                                    if history.len() > 1000 {
+                                                        history.remove(0);
+                                                    }
                                                 }
                                             }
                                         }
@@ -75,8 +87,8 @@ impl MarketDataFeed {
                                                         (best_bid[0].as_str(), best_ask[0].as_str()) {
                                                         if let (Ok(bid_val), Ok(ask_val)) = 
                                                             (bid_price.parse::<f64>(), ask_price.parse::<f64>()) {
-                                                            *bid.lock().unwrap() = bid_val;
-                                                            *ask.lock().unwrap() = ask_val;
+                                                            *bid.write().unwrap() = bid_val;
+                                                            *ask.write().unwrap() = ask_val;
                                                         }
                                                     }
                                                 }
@@ -94,19 +106,19 @@ impl MarketDataFeed {
     }
 
     pub fn current_price(&self) -> f64 {
-        *self.price.lock().unwrap()
+        *self.price.read().unwrap()
     }
     
     pub fn current_bid(&self) -> f64 {
-        *self.bid.lock().unwrap()
+        *self.bid.read().unwrap()
     }
     
     pub fn current_ask(&self) -> f64 {
-        *self.ask.lock().unwrap()
+        *self.ask.read().unwrap()
     }
     
     pub fn realized_volatility(&self) -> f64 {
-        let prices = self.price_history.lock().unwrap();
+        let prices = self.price_history.read().unwrap();
         if prices.len() < 2 { return 0.3; } // Default 30% vol
         
         let returns: Vec<f64> = prices.windows(2)

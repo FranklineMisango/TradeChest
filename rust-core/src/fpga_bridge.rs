@@ -18,23 +18,21 @@ impl FPGAEngine {
         self._initialized = false;
     }
 
-    pub fn calculate_optimal_quotes(&self, mid_price: f64, inventory: i32, volatility: f64) -> (f64, f64, u32) {
+    pub fn calculate_optimal_quotes(&self, mid_price: f64, inventory: i32, volatility: f64, gamma: f64, k: f64) -> (f64, f64, u32) {
         if !self._initialized {
-            return self.software_fallback(mid_price, inventory, volatility);
+            return self.software_fallback(mid_price, inventory, volatility, 0.1, 1.5);
         }
 
     // ...existing code...
         
         // FPGA disabled - use optimized software calculation
-        self.software_fallback(mid_price, inventory, volatility)
+        self.software_fallback(mid_price, inventory, volatility, gamma, k)
     }
 
-    fn software_fallback(&self, mid_price: f64, inventory: i32, volatility: f64) -> (f64, f64, u32) {
+    fn software_fallback(&self, mid_price: f64, inventory: i32, volatility: f64, gamma: f64, k: f64) -> (f64, f64, u32) {
         // Optimized software HJB implementation
     // ...existing code...
         
-        let gamma = 0.1;
-        let k = 1.5;
         let inv_f64 = inventory as f64;
         
         // Vectorized calculations
